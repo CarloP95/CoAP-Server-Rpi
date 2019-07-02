@@ -1,0 +1,25 @@
+{
+  "name": "CoAP-Server-Rpi",
+  "version": "0.0.0",
+  "description": "A simple CoAP server that will expose environmental variables taken from raspberry",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CarloP95/CoAP-Server-Rpi.git"
+  },
+  "keywords": [
+    "nodejs",
+    "coap",
+    "rpi",
+    "raspberry"
+  ],
+  "author": "carlop95 (at)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CarloP95/CoAP-Server-Rpi/issues"
+  },
+  "homepage": "https://github.com/CarloP95/CoAP-Server-Rpi#readme"
+}
