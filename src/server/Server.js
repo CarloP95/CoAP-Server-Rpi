@@ -1,4 +1,6 @@
 const coap = require('coap');
+const EnvironmentalInput = require('../dataManager/DataManager').EnvironmentalInput;
+const EnvironmentalOutput = require('../dataManager/DataManager').EnvironmentalOutput;
 
 var server = coap.createServer();
 
@@ -38,3 +40,21 @@ server.listen(logForStartup);
 
 
 exports.coap_server = server;
+
+
+/* Test for Sensors*/
+var humSensor = new EnvironmentalInput( 'Temperature and humidity', 17);
+var reedSensor = new EnvironmentalInput( 'Magnetic field', 18); /*0 means contact closed, 1 means no mag field*/
+
+var rgbOutput = new EnvironmentalOutput('RGB Led', 'rgb', 20, 16, 21 );
+
+setInterval(function() {
+	
+		var list = ['red', 'blue', 'green'];
+		let randomIdx = Math.floor(Math.random() * (list.length));
+		//list[randomIdx].value = 1;
+		rgbOutput.value = list[randomIdx];
+		console.log(`Should have written ${rgbOutput.value}`);
+	
+	}, 4 * 1000);
+
