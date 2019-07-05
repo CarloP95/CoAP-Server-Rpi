@@ -1,7 +1,11 @@
 var gpioManager = new (require('../gpioManager/GpioManager').GpioManager)();
 
-let outputDriver = ['rgb']
+var DHT = require('node-dht-sensor');
+
+let outputDrivers = ['rgb']
 let GPIO_HIGH = 1, GPIO_LOW = 0;
+
+let inputDrivers = ['dht'];
 
 class RGBWriter {
 	
@@ -36,6 +40,29 @@ class RGBWriter {
 	
 }
 
+class TempHumReader {
+	
+	constructor(gpioIdx, type = 11) {
+		this.gpioIdx = gpioIdx;
+		this.sensorType = type;
+		
+		DHT.setMaxRetries(4);
+		if(!DHT.initialize(this.sensorType, this.gpioIdx))
+			console.warn(`Error while initializing the TempHumReader..`);
+			
+	}
+	
+	read() {
+				
+		const values =  DHT.read();
+		
+		if(!values.isValid)
+			console.warn(`Warning: TempHumReader is not reading correct values..`);
+			
+		return [values.temperature, values.humidity];
+	}	
+}
+
 
 class EnvironmentalOutput {
 	
@@ -55,12 +82,12 @@ class EnvironmentalOutput {
 	
 	static resolveDriver(requestedDriver) {
 		
-		if (!requestedDriver in outputDriver)
-			throw `Supported drivers are ${JSON.stringify(outputDriver)}. Output Driver requested was ${outDriver}, not found.`;
+		if (!requestedDriver in outputDrivers)
+			throw `Supported drivers are ${JSON.stringify(outputDrivers)}. Output Driver requested was ${requestedDriver}, not found.`;
 			
 		let returnDriverClass = undefined;
 		
-		if (requestedDriver == 'rgb')
+		if (requestedDriver == outputDrivers[0] /* rgb */)
 			returnDriverClass = RGBWriter;
 		
 		return returnDriverClass;
@@ -76,14 +103,35 @@ class EnvironmentalOutput {
 
 class EnvironmentalInput {
 	
-	constructor(name, gpioIdx, interval = 5 * 1000) {
+	constructor(name, gpioIdx, readDriver = null, interval = 5 * 1000) {
 		this.name = name;
 		this.lastValue = null;
 		this.gpioIdx = gpioIdx;
 		this.readInterval = interval;
 		
-		this.GPIO = gpioManager.getGpio(gpioIdx, 'in');
+		if (readDriver != null && inputDrivers.includes(readDriver))
+			this.inputDriver = new (EnvironmentalInput.resolveDriver(readDriver))(this.gpioIdx);
+		
+			
+		else
+			this.GPIO = gpioManager.getGpio(gpioIdx, 'in');
+			
+			
 		this.readInterval = setInterval(this.updateRoutine, interval, this);
+	}
+	
+	static resolveDriver(requestedDriver) {
+		
+		if (!requestedDriver in inputDrivers)
+			throw `Supported drivers are ${JSON.stringify(inputDrivers)}. Input Driver requested was ${requestedDriver}, not found.`;
+			
+		let returnDriverClass = undefined;
+		
+		if (requestedDriver == inputDrivers[0] /* dht */)
+			returnDriverClass = TempHumReader;
+		
+		return returnDriverClass;
+		
 	}
 	
 	updateRoutine(environmentalObjInstance) { 
@@ -92,7 +140,7 @@ class EnvironmentalInput {
 		console.log(`${self.name} ${self.value}`);
 	}
 	
-	firstTimeRead() { this.value = 0; return this.value; } 
+	firstTimeRead() { this.value = 0; /*return this.value;*/ } 
 	
 	get value() { 
 		return this.lastValue != null ?
@@ -100,7 +148,11 @@ class EnvironmentalInput {
 			this.firstTimeRead();
 	}
 	
-	set value(_) { this.lastValue = this.GPIO.readSync(); }
+	set value(_) { 
+		this.lastValue = this.inputDriver != null ?
+			this.inputDriver.read() :
+			this.GPIO.readSync();
+	}
 	
 }
 

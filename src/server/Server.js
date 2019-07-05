@@ -43,8 +43,22 @@ exports.coap_server = server;
 
 
 /* Test for Sensors*/
-var humSensor = new EnvironmentalInput( 'Temperature and humidity', 17);
+
+var humSensor = new EnvironmentalInput( 'Temperature and humidity', 17, 'dht');
 var reedSensor = new EnvironmentalInput( 'Magnetic field', 18); /*0 means contact closed, 1 means no mag field*/
+
+/*var DHT = require('node-dht-sensor');
+
+const values =  DHT.read(11, 17, (err, temperature, humidity) => {
+			
+	if (err)
+		console.log `An error occurred while reading from DHT${this.sensorType}. You should see the following informations.. ${JSON.stringify(err)}`;
+	
+	console.log(`${temperature}, ${humidity}`);
+	return [temperature, humidity];
+			
+});*/
+
 
 var rgbOutput = new EnvironmentalOutput('RGB Led', 'rgb', 20, 16, 21 );
 
