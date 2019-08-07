@@ -12,12 +12,15 @@ class GpioManager {
 	}
 	
 	
-	getGpio(gpioIndex, in_out) {
+	getGpio(gpioIndex, in_out, listen_for = null) {
 		
 		if (gpioIndex in this.occupiedGpio) 
 			throw `The GPIO requested ${gpioIndex} is already occupied. ${JSON.stringify(this.occupiedGpio[gpioIndex])}`;
 			
-		let toReturnGpio = new Gpio(gpioIndex, in_out);
+		let toReturnGpio = !listen_for ? 
+								new Gpio(gpioIndex, in_out):
+								new Gpio(gpioIndex, in_out, listen_for);
+								
 		this.occupiedGpio[gpioIndex] = toReturnGpio;
 		
 		return toReturnGpio;
@@ -25,7 +28,7 @@ class GpioManager {
 	
 	clearGpios() {
 			
-		for (const idx in GpioManager.instance.occupiedGpio)
+		for (const idx in GpioManager.instance.hoccupiedGpio)
 			GpioManager.instance.occupiedGpio[idx].unexport();
 			
 		console.warn('Class GpioManager cleaned up resources for GPIO. Program must be terminated..');

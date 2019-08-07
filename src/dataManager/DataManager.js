@@ -2,10 +2,14 @@ var gpioManager = new (require('../gpioManager/GpioManager').GpioManager)();
 
 var DHT = require('node-dht-sensor');
 
+const Raspi 	= require('raspi');
+const I2C   	= require('raspi-i2c').I2C;
+const ADS1x15 	= require('raspi-kit-ads1x15');
+
 let outputDrivers = ['rgb']
 let GPIO_HIGH = 1, GPIO_LOW = 0;
 
-let inputDrivers = ['dht'];
+let inputDrivers = ['dht', 'rot'];
 
 class RGBWriter {
 	
@@ -63,6 +67,51 @@ class TempHumReader {
 	}	
 }
 
+class RotatoryDriver {
+	
+	constructor(gpioIdxs) {
+		this.gpioIdxs = gpioIdxs;
+		this.rotation = 0;
+		let gpios = {};
+		
+		for(let gpioIdx in this.gpioIdxs) {
+			
+			let gpio = gpioManager.getGpio( this.gpioIdxs[gpioIdx] , 'in', 'both') 
+			
+			if (gpioIdx == 'dt')
+				gpio.watch( (err, value) => { this.getDirection(value); });
+				
+			else if (gpioIdx == 'sw')
+				gpio.watch( (err, value) => { this.rotation = 0 } );
+				
+			else if (gpioIdx == 'clk')
+				gpio.watch( (err, value) => { this.getDirection(value); } );
+				
+			gpios[gpioIdx] = gpio;
+			
+		}
+		
+		this.gpios = gpios;
+			
+	}
+	
+	getDirection(value) {
+			
+			if (this.gpios['clk'].readSync() == 0)
+				this.rotation += value == 1 ?
+					value :
+					-1;
+				
+			console.log(this.gpios['clk'].readSync(), value);
+	}
+	
+	read() {
+		
+		return this.rotation;
+
+	}	
+}
+
 
 class EnvironmentalOutput {
 	
@@ -87,9 +136,10 @@ class EnvironmentalOutput {
 			
 		let returnDriverClass = undefined;
 		
+		
 		if (requestedDriver == outputDrivers[0] /* rgb */)
 			returnDriverClass = RGBWriter;
-		
+				
 		return returnDriverClass;
 		
 	}
@@ -112,7 +162,6 @@ class EnvironmentalInput {
 		if (readDriver != null && inputDrivers.includes(readDriver))
 			this.inputDriver = new (EnvironmentalInput.resolveDriver(readDriver))(this.gpioIdx);
 		
-			
 		else
 			this.GPIO = gpioManager.getGpio(gpioIdx, 'in');
 			
@@ -127,8 +176,13 @@ class EnvironmentalInput {
 			
 		let returnDriverClass = undefined;
 		
+		
 		if (requestedDriver == inputDrivers[0] /* dht */)
 			returnDriverClass = TempHumReader;
+		
+		else if (requestedDriver == inputDrivers[1] /* rot */)
+			returnDriverClass = RotatoryDriver;
+		
 		
 		return returnDriverClass;
 		
@@ -165,6 +219,25 @@ function endRoutine() {
 
 process.on('SIGINT', endRoutine);
 
+const i2c = new I2C();
+
+const adc = new ADS1x15({
+	i2c,
+	chip: 		ADS1x15.chips.IC_ADS1115,
+	address:	ADS1x15.address.ADDRESS_0x48,
+	
+	pga: 		ADS1x15.pga.PGA_4_096V,
+	sps:		ADS1x15.spsADS1115.SPS_250
+});
+
+adc.readChannel(ADS1x15.channel.CHANNEL_0, (err, value, volts) => {
+	if (err)
+		console.error('ADC is giving problems.. ', err);
+		
+	else {
+		console.log(`Channel 0 -- Value: ${value} - Volts: ${volts}`);
+	}
+});
 
 module.exports = {
 	EnvironmentalInput,
