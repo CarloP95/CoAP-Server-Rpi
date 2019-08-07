@@ -56,24 +56,25 @@ class AdcBrightnessReader {
 			pga: 		ADS1x15.pga.PGA_4_096V,
 			sps:		ADS1x15.spsADS1115.SPS_250
 		});
+
+		this.value = 0; this.voltage = 0;
+
 	}
 
 	read() {
-		
-		let val, volt = val = 0;
-		
+
 		this.adc.readChannel(ADS1x15.channel.CHANNEL_0, (err, value, volts) => {
 			if (err)
 				console.error('ADC is giving problems.. ', err);
 
 			else {
 				console.log(`Channel 0 -- Value: ${value} - Volts: ${volts}`);
-				val = value; volt = volts;
+				this.value = value; this.voltage = volts;
 			}
 
 		});
-		
-		return [val, volt];
+
+		return [this.value, this.voltage];
 
 	}
 
